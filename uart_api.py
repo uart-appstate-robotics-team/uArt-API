@@ -1,10 +1,25 @@
 import numpy as np
+import os
+import sys
+import time
+import threading
+sys.path.append(os.path.join(os.path.dirname(_file_), '../../..')
+from uarm.wrapper import SwiftAPI
+from uarm.tools.list_ports import get_ports
+
+
 class uart_api:
     available_pixel = {}
+    swift = None
+    device_info = None
+    firmware_version = None
+    
     def __init__(self):
         self.available_pixel = {'red':[255,0,0], 'green':[0,255,0], 'blue':[0,0,255],'magenta':[255,0,255], 'tomato':[255,99,71], 'lawn green':[124,252,0]}
-
-
+        self.swift = SwfitAPI(filters={'hwid': 'USB VID:PID=2341:0042'})
+        self.device_info = swift.get_device_info()
+        self.firmware_version = device_info['firmware_version']
+        self.swift.set_mode(0)        
 #
 #	HEAT MAP
 #
@@ -50,6 +65,89 @@ class uart_api:
 
 
 
+#
+# GoTOList
+#
+    def moveTo():
+        var = []
+        count = 0
+        lines = open("uArmCoordinates.txt", "r").read().split('\n')
+        x,y,z,f = 0
 
-tmp = uart_api()
-print (tmp.get_closest_color([200,0,150]))
+        for i in range(len(lines)):
+            for word in lines[i].split(' '):
+                if(word[0] is 'X'):
+                    x = float(word[1:])
+                elif(word[0] is 'Y'):
+                    y = float(word[1:])
+                elif(word[0] is 'Z'):
+                    z = float(word[1:])
+                elif(word[0] is 'F'):
+                    f = float(word[1:])
+             swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
+             time.sleep(1)
+        coordinates.close()
+
+#
+# SETTING FOUR CORNERS
+#
+     def setFourCorners(self):
+         speed_s = 10000
+         delay = 1
+         cmd_s = 'G0'
+         todo = 4
+         coords = [[], [], [], []]
+         while todo >0:
+             key = input()
+             if key == "tr":
+                 newCoord = swift.get_position()
+                 coords[1] = newCoord
+                 todo -= 1
+                 print("Top right coordinate saved as ", newCoord)
+             elif key == "tl":
+                 newCoord = swift.get_position()
+                 coords[0] = newCoord
+                 todo -= 1
+                 print("Top left coordinate saved as", newCoord)
+             elif key == "bl":
+                 newCoord = swift.get_position()
+                 coords[2] = newCoord
+                 todo -= 1
+                 print("Bottom left coordinate saved as", newCoord)
+             elif key == "br"
+             newCoord = swift.get_position()
+             coords[3] = newCoord
+             todo -= 1
+             print("Bottom right coodirnate saved as", newCoord)
+
+         return coords
+
+
+
+#
+# SAVED COORDS TO FILE
+#
+    def saveCoordsToFile(self):
+        spped_s = 10000
+        delay = 1
+        cmd_s = 'G0'
+
+        todo = 4
+        coords = []
+        while True:
+            key = input()
+            if key == "save":
+                newCoord = swift.get_position()
+                coords.append(newCoord)
+                print("New coordinate saved as" + str(newCoord))
+            if key == "done":
+                break
+
+        if os.path.exists("Coordinates.txt"):
+            os.remove("Coordinates.txt")
+        file = open("Coordinates.txt", "w+")
+        for c in coords:
+            file.write("G0 X%f Y%f Z%f F5000\n" %(c[0], c[1], c[2]))
+        coordinates.close()
+        moveTo("Coordinates.txt")
+        return coords
