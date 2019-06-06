@@ -13,14 +13,15 @@ import cv2
 #from uarm.tools.list_ports import get_ports
 
 class uart_api:
-    available_pixel = {}
-    swift = None
-    device_info = None
+    available_pixel = {} #rgb values of all the paints
+    swift = None #robot arm object
+    device_info = None 
     firmware_version = None
     image = None #image you're trying to paint
     canvas = None #image of the canvas as you're working on it
     canvas_corners = None #points of the four corners of the canvas (in robot arm coords)
-    ptransform = None #contains the warped image of 
+    ptransform = None #contains the warped image of
+    M = None #transformation matrix
     def __init__(self, im):
         self.available_pixel = {'red':[255,0,0], 'green':[0,255,0], 'blue':[0,0,255],'magenta':[255,0,255], 'tomato':[255,99,71], 'lawn green':[124,252,0]}
         self.swift = SwiftAPI(filters={'hwid': 'USB VID:PID=2341:0042'})
@@ -30,8 +31,9 @@ class uart_api:
         self.image = im
         self.canvas_corners = self.setFourCorners()
         _, cap = cv2.VideoCapture(0).read()
-        self.ptransform = perspective.PerspectiveTransform(self.image)
-        
+        self.ptransform = perspective.PerspectiveTransform(self.image)        
+        self.M = self.get_m()
+
 #
 #	HEAT MAP
 #
@@ -159,8 +161,27 @@ class uart_api:
         coordinates.close()
         moveTo("Coordinates.txt")
         return coords
+#
+# GET M
+#
+    def get_m(corners):
+        A = np.transpose(corners)
+        B = [[0,0,1],[200,0,1],[0,200,1],[200,200,1]]
+        B = np.transpose(B)
+        pinvB = np.linalg.pinv(B)
+        print(pinvB.shape)
+        M = np.matmul(A, np.linalg.pinv(B))
+        print(M.shape)
+        return M
+
+#
+#    xytoxyz
+#
+    def xy_to_xyz1(xy):
+        xyz = [xy[0],xy[1],1]
+        xyz = np.transpose(xyz)
+        return np.matmul(self.M,xyz)
 
 _,im = cv2.VideoCapture(0).read()
 uart = uart_api(im)
-
 
