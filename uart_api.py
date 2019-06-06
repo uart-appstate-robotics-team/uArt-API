@@ -3,7 +3,9 @@ import os
 import sys
 import time
 import threading
-sys.path.append(os.path.join(os.path.dirname(_file_), '../../..')
+
+sys.path.append(os.path.join(os.path.dirname(_file_), '../../..'))
+
 from uarm.wrapper import SwiftAPI
 from uarm.tools.list_ports import get_ports
 
@@ -84,14 +86,14 @@ class uart_api:
                     z = float(word[1:])
                 elif(word[0] is 'F'):
                     f = float(word[1:])
-             swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
-             time.sleep(1)
+            swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
+            time.sleep(1)
         coordinates.close()
 
 #
 # SETTING FOUR CORNERS
 #
-     def setFourCorners(self):
+    def setFourCorners(self):
          speed_s = 10000
          delay = 1
          cmd_s = 'G0'
