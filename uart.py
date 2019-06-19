@@ -94,7 +94,7 @@ class uart_api:
                     x = float(word[1:])
                 elif(word[0] is 'Y'):
                     y = float(word[1:])
-                elif(word[0] is 'Z'):
+              elif(word[0] is 'Z'):
                     z = float(word[1:])
                 elif(word[0] is 'F'):
                     f = float(word[1:])
@@ -213,7 +213,26 @@ class uart_api:
         self.go_to_position(endxyz, 5000)
         print("going to end post")
         self.go_to_position(end_post, 10000)
-        
+
+
+    def draw_line2(self, points):
+        startxyz = self.xy_to_xyz(points[0])
+        endxyz = self.xy_to_xyz(points[-1])
+        start_pre = [startxyz[0]-50, startxyz[1], startxyz[2]]
+        end_post = [endxyz[0]-50, endxyz[1], endxyz[2]]
+
+        print("going to start pre")
+        self.go_to_position(start_pre, 10000)
+        for point in points:
+            point_xyz = self.xy_to_xyz(point)
+            self.go_to_position(point_xyz), 5000)
+        print("going to start")
+        self.go_to_position(startxyz, 5000)
+        print("going to end")
+        self.go_to_position(endxyz, 5000)
+            
+        print("going to end post")
+        self.go_to_position(end_post, 10000)
 
 
 image = cv2.resize(cv2.imread("./images/1x1.png"), (200,200))
