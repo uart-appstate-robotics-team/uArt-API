@@ -57,7 +57,6 @@ class uart_api:
         self.ptransform = perspective.PerspectiveTransform(self.image)        
         self.M = self.get_m()
         print("Arm all set up!")
-
     
 #
 #	HEAT MAP
@@ -252,42 +251,3 @@ class uart_api:
         print("going to end post")
         self.go_to_position(end_post, 10000)
 
-image = cv2.resize(cv2.imread("./images/1x1.png"), (200,200))
-uart = uart_api(image)
-
-print("head")
-uart.draw_line2([[139,61],[159,61],[166,52],[166,38],[159,33],[141,33],[132,38],[132,55],[139,61]])
-
-print("neck")
-uart.draw_line2([[148,63],[148,71]])
-
-print("body")
-uart.draw_line2([[148,71],[148,122]])
-
-print("right leg")
-uart.draw_line2([[148,122],[175,183]])
-
-print("left leg")
-uart.draw_line2([[148,122],[121,183]])
-
-print("left arm")
-uart.draw_line2([[148,71],[114,104]])
-
-print("right arm")
-uart.draw_line2([[148,71],[176,108]])
-
-asdf = input("go y/n")
-
-uart.draw_line2([[139,61],[159,61],[166,52],[166,38],[159,33],[141,33],[132,38],[132,55],[139,61]])
-
-uart.draw_line2([[148,63],[148,71]])
-
-uart.draw_line2([[148,71],[148,122]])
-
-uart.draw_line2([[148,122],[121,183]])
-
-uart.draw_line2([[148,122],[175,183]])
-
-uart.draw_line2([[148,71],[114,104]])
-
-uart.draw_line2([[148,71],[176,108]])
