@@ -24,38 +24,41 @@ class uart_api:
     canvas_corners = None #points of the four corners of the canvas (in robot arm coords)
     ptransform = None #contains the warped image of
     M = None #transformation matrix
-    def __init__(self, im):
-        self.available_pixel = {'red':[255,0,0], 'green':[0,255,0], 'blue':[0,0,255],'magenta':[255,0,255], 'tomato':[255,99,71], 'lawn green':[124,252,0]}
-        self.swift = SwiftAPI(filters={'hwid': 'USB VID:PID=2341:0042'})
-        self.device_info = self.swift.get_device_info()
-        self.firmware_version = self.device_info['firmware_version']
-        self.swift.set_mode(0)
-        self.image = im
+    #
+    #  __init__
+    #      im = the image you're trying to paint
+    #      pixels = the dictionary of colors you have access to
+    #      initialized = a list of booleans determining which values you will initialize
+    #          [ True = available_pixel uses pixels parameter otherwise use defaults,
+    #            True = set swift to SwiftAPI object otherwise set them to None,
+    #            True = set image to a blank white 200x200 image,
+    #            True = calibrate canvas_corners using setFourCorners otherwise set to a preset 
+    #          ]
+    #    
+    def __init__(self, im, pixels, initialized):
+        if initialized[0]:
+            self.available_pixel = pixels
+        else:
+            self.available_pixel = {'red':[255,0,0], 'green':[0,255,0], 'blue':[0,0,255],'magenta':[255,0,255], 'tomato':[255,99,71], 'lawn green':[124,252,0]}
+        if initialized[1]:
+            self.swift = SwiftAPI(filters={'hwid': 'USB VID:PID=2341:0042'})
+            self.device_info = self.swift.get_device_info()
+            self.firmware_version = self.device_info['firmware_version']
+            self.swift.set_mode(0)
+        if initialized[2]:
+            self.image = im
         print("Setting four corners; input tl, tr, bl or br")
-        self.canvas_corners = self.setFourCorners()
-        #self.canvas_corners =  [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]]
+        if initialized[3] and initialized[1]:
+            self.canvas_corners = self.setFourCorners()
+        else:
+            self.canvas_corners =  [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]]
 
         _, cap = cv2.VideoCapture(0).read()
         self.ptransform = perspective.PerspectiveTransform(self.image)        
         self.M = self.get_m()
         print("Arm all set up!")
 
-    #    if you pass in a third parameter the device won't require any calibration and instead use default values for everything
-    def __init__(self, im, default):
-        self.available_pixel = {'red':[255,0,0], 'green':[0,255,0], 'blue':[0,0,255],'magenta':[255,0,255], 'tomato':[255,99,71], 'lawn green':[124,252,0]}
-        self.swift = SwiftAPI(filters={'hwid': 'USB VID:PID=2341:0042'})
-        self.device_info = self.swift.get_device_info()
-        self.firmware_version = self.device_info['firmware_version']
-        self.swift.set_mode(0)
-        self.image = im
-        print("Setting four corners; input tl, tr, bl or br")
-        #self.canvas_corners = self.setFourCorners()
-        self.canvas_corners =  [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]]
-
-        _, cap = cv2.VideoCapture(0).read()
-        self.ptransform = perspective.PerspectiveTransform(self.image)        
-        self.M = self.get_m()
-        print("Arm all set up!")
+    
 #
 #	HEAT MAP
 #
