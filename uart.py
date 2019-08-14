@@ -24,17 +24,17 @@ class uart_api:
     canvas_corners = None #points of the four corners of the canvas (in robot arm coords)
     ptransform = None #contains the warped image of
     M = None #transformation matrix
-    #
-    #  __init__
-    #      im = the image you're trying to paint
-    #      pixels = the dictionary of colors you have access to
-    #      initialized = a list of booleans determining which values you will initialize
-    #          [ True = available_pixel uses pixels parameter otherwise use defaults,
-    #            True = set swift to SwiftAPI object otherwise set them to None,
-    #            True = set image to a blank white 200x200 image,
-    #            True = calibrate canvas_corners using setFourCorners otherwise set to a preset 
-    #          ]
-    #    
+#
+#  __init__
+#      im = the image you're trying to paint
+#      pixels = the dictionary of colors you have access to
+#      initialized = a list of booleans determining which values you will initialize
+#          [ True = available_pixel uses pixels parameter otherwise use defaults,
+#            True = set swift to SwiftAPI object otherwise set them to None,
+#            True = set image to a blank white 200x200 image,
+#            True = calibrate canvas_corners using setFourCorners otherwise set to a preset 
+#          ]
+#    
     def __init__(self, im, pixels, initialized):
         if initialized[0]:
             self.available_pixel = pixels
@@ -47,14 +47,14 @@ class uart_api:
             self.swift.set_mode(0)
         if initialized[2]:
             self.image = im
-        print("Setting four corners; input tl, tr, bl or br")
         if initialized[3] and initialized[1]:
             self.canvas_corners = self.setFourCorners()
+            print("Setting four corners; input tl, tr, bl or br")
         else:
             self.canvas_corners =  [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]]
-
+            print("Setting four corners to default coordinates")
         _, cap = cv2.VideoCapture(0).read()
-        self.ptransform = perspective.PerspectiveTransform(self.image)        
+        self.ptransform = perspective.PerspectiveTransform(cap)
         self.M = self.get_m()
         print("Arm all set up!")
     
@@ -63,7 +63,7 @@ class uart_api:
 #
     def generate_heatmap(self):
         image = self.image.astype(dtype='int32')
-        canvas = self.canvas.astype(dtype='int32')
+        canvas = self.ptransform.warped.astype(dtype='int32')
 
         subtraction = np.subtract(image,canvas)
         print(subtraction)
@@ -99,32 +99,45 @@ class uart_api:
 
         return curr_key
 
-
-
 #
-# GoTOList
+#   move_to_file
 #
+
     def move_to_file(filename):
         var = []
         count = 0
         lines = open(filename, "r").read().split('\n')
-        x,y,z,f = 0
+        x,y,z,f,angle = 0
+        moveArm,moveWrist = False
 
         for i in range(len(lines)):
             for word in lines[i].split(' '):
-                if(word[0] is 'X'):
-                    x = float(word[1:])
-                elif(word[0] is 'Y'):
-                    y = float(word[1:])
-                elif(word[0] is 'Z'):
-                    z = float(word[1:])
-                elif(word[0] is 'F'):
-                    f = float(word[1:])
+                if(word is 'G0'):
+                    moveArm = True
+                    if(word[0] is 'X'):
+                        x = float(word[1:])
+                    elif(word[0] is 'Y'):
+                        y = float(word[1:])
+                    elif(word[0] is 'Z'):
+                        z = float(word[1:])
+                    elif(word[0] is 'F'):
+                        f = float(word[1:])
+                elif(word is 'WA'):
+                    moveWrist = True
+                    angle = float(word[1:])
 
-            swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
-            self.swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
-            time.sleep(1)
+            if(moveArm):
+                swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
+                self.swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
+                moveArm = False
+                time.sleep(1)
+            if(moveWrist):
+                swift.set_wrist(angle)
+                moveWrist = False
+                time.sleep(1)
+                
         coordinates.close()
+
 
 #
 # SETTING FOUR CORNERS
@@ -165,9 +178,8 @@ class uart_api:
 #
 # SAVED COORDS TO FILE
 #
-    def saveCoordsToFile(self):
+    def saveCoordsToFile(self, fn):
         delay = 1
-        cmd_s = 'G0'
 
         coords = []
         while True:
@@ -176,17 +188,31 @@ class uart_api:
                 newCoord = swift.get_position()
                 coords.append(newCoord)
                 print("New coordinate saved as" + str(newCoord))
-            if key == "done":
+            elif key == "done":
                 break
+            elif key.isdigit():
+                coords.append(int(key))
+                
 
-        if os.path.exists("Coordinates.txt"):
-            os.remove("Coordinates.txt")
-        file = open("Coordinates.txt", "w+")
+        if os.path.exists(fn + ".uar"):
+            os.remove(fn + ".uar")
+        file = open(fn + ".uar", "w+")
         for c in coords:
-            file.write("G0 X%f Y%f Z%f F5000\n" %(c[0], c[1], c[2]))
+            if not check(c):
+                file.write("G0 X%f Y%f Z%f F5000\n" %(c[0], c[1], c[2]))
+            else:
+                file.write("WA " %(c))
         coordinates.close()
-        moveTo("Coordinates.txt")
+        moveTo(fn + ".uar")
         return coords
+
+    def check(inp):
+        try:
+            num_float = float(inp)
+            return True 
+        except:
+            return False
+
 #
 # GET M
 #
@@ -236,7 +262,10 @@ class uart_api:
         print("going to end post")
         self.go_to_position(end_post, 10000)
 
-
+#
+#
+#    draws a line, by moving across a list of points
+#
     def draw_line2(self, points):
         startxyz = self.xy_to_xyz(points[0])
         endxyz = self.xy_to_xyz(points[-1])

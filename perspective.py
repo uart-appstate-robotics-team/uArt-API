@@ -5,11 +5,16 @@
 import argparse
 import cv2
 import numpy as np
-
+from PIL import Image
+import os
 class PerspectiveTransform:
 	def __init__(self, image):
 		width,height,channels = image.shape
-		self.selection = cv2.resize(cv2.imread("./images/1x1.png"), (height, width))
+		print(width, height, channels)
+		oneXone = cv2.imread(os.path.split(os.path.abspath(__file__))[0] + "/images/1x1.png")
+		print("cv2",oneXone)
+
+		self.selection = cv2.resize(oneXone, (height, width))
 		self.image = image
 		self.warped = None
 		self.points = []
