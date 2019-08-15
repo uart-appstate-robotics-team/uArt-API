@@ -32,7 +32,8 @@ class uart_api:
 #          [ True = available_pixel uses pixels parameter otherwise use defaults,
 #            True = set swift to SwiftAPI object otherwise set them to None,
 #            True = set image to a blank white 200x200 image,
-#            True = calibrate canvas_corners using setFourCorners otherwise set to a preset 
+#            True = calibrate canvas_corners using setFourCorners otherwise set to a preset
+#            True = set ptransform using the webcam
 #          ]
 #    
     def __init__(self, im, pixels, initialized):
@@ -53,8 +54,9 @@ class uart_api:
         else:
             self.canvas_corners =  [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]]
             print("Setting four corners to default coordinates")
-        _, cap = cv2.VideoCapture(0).read()
-        self.ptransform = perspective.PerspectiveTransform(cap)
+        if initialized[4]:
+            _, cap = cv2.VideoCapture(0).read()
+            self.ptransform = perspective.PerspectiveTransform(cap)
         self.M = self.get_m()
         print("Arm all set up!")
     
