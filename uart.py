@@ -4,7 +4,7 @@ import sys
 import time
 import threading
 
-import perspective
+from .perspective import PerspectiveTransform
 
 import cv2
 
@@ -14,7 +14,7 @@ from PIL import Image
 from uarm.wrapper import SwiftAPI
 from uarm.tools.list_ports import get_ports
 
-class uart_api:
+class uart:
     available_pixel = {} #rgb values of all the paints
     swift = None #robot arm object
     device_info = None 
@@ -41,23 +41,31 @@ class uart_api:
             self.available_pixel = pixels
         else:
             self.available_pixel = {'red':[255,0,0], 'green':[0,255,0], 'blue':[0,0,255],'magenta':[255,0,255], 'tomato':[255,99,71], 'lawn green':[124,252,0]}
+
         if initialized[1]:
             self.swift = SwiftAPI(filters={'hwid': 'USB VID:PID=2341:0042'})
             self.device_info = self.swift.get_device_info()
             self.firmware_version = self.device_info['firmware_version']
             self.swift.set_mode(0)
+
         if initialized[2]:
             self.image = im
+            
         if initialized[3] and initialized[1]:
-            self.canvas_corners = self.setFourCorners()
+            print("moving")
+            self.swift.set_position(x=150, y=0, z=50, speed = 10000, cmd = "G0")
+            self.swift.set_wrist(90)
             print("Setting four corners; input tl, tr, bl or br")
+            self.canvas_corners = self.setFourCorners()
         else:
-            self.canvas_corners =  [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]]
+            self.canvas_corners = [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]] 
             print("Setting four corners to default coordinates")
+
         if initialized[4]:
             _, cap = cv2.VideoCapture(0).read()
             self.ptransform = perspective.PerspectiveTransform(cap)
-        self.M = self.get_m()
+
+        self.M = self.get_m(200,200)
         print("Arm all set up!")
     
 #
@@ -105,7 +113,7 @@ class uart_api:
 #   move_to_file
 #
 
-    def move_to_file(filename):
+    def move_to_file(self, filename):
         var = []
         count = 0
         lines = open(filename, "r").read().split('\n')
@@ -129,12 +137,11 @@ class uart_api:
                     angle = float(word[1:])
 
             if(moveArm):
-                swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
                 self.swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
                 moveArm = False
                 time.sleep(1)
             if(moveWrist):
-                swift.set_wrist(angle)
+                self.swift.set_wrist(angle)
                 moveWrist = False
                 time.sleep(1)
                 
@@ -203,6 +210,7 @@ class uart_api:
             if not check(c):
                 file.write("G0 X%f Y%f Z%f F5000\n" %(c[0], c[1], c[2]))
             else:
+                self.set_wrist(c)
                 file.write("WA " %(c))
         coordinates.close()
         moveTo(fn + ".uar")
@@ -218,10 +226,10 @@ class uart_api:
 #
 # GET M
 #
-    def get_m(self):
+    def get_m(self, width, height):
         A = np.transpose(self.canvas_corners)
         print(A)
-        B = [[0,0,1],[200,0,1],[0,200,1],[200,200,1]]
+        B = [[0,0,1],[width,0,1],[0,height,1],[width,height,1]]
         B = np.transpose(B)
         print(B)
         pinvB = np.linalg.pinv(B)
@@ -271,14 +279,33 @@ class uart_api:
     def draw_line2(self, points):
         startxyz = self.xy_to_xyz(points[0])
         endxyz = self.xy_to_xyz(points[-1])
-        start_pre = [startxyz[0]-20, startxyz[1], startxyz[2]]
-        end_post = [endxyz[0]-20, endxyz[1], endxyz[2]]
+        start_pre = [startxyz[0]-40, startxyz[1], startxyz[2]]
+        end_post = [endxyz[0]-40, endxyz[1], endxyz[2]]
 
-        print("going to start pre")
-        self.go_to_position(start_pre, 10000)
+        #print("going to start pre")
+        #self.go_to_position(start_pre, 10000)
         for point in points:
             point_xyz = self.xy_to_xyz(point)
             self.go_to_position(point_xyz, 5000)
-        print("going to end post")
-        self.go_to_position(end_post, 10000)
+        #print("going to end post")
+        #self.go_to_position(end_post, 10000)
+
+#
+#
+#    draws a line, by moving across a list of points
+#    does NOT go to pre and post painting position
+#
+    def draw_line3(self, points):
+        startxyz = self.xy_to_xyz(points[0])
+        endxyz = self.xy_to_xyz(points[-1])
+        start_pre = [startxyz[0]-40, startxyz[1], startxyz[2]]
+        end_post = [endxyz[0]-40, endxyz[1], endxyz[2]]
+
+        #print("going to start pre")
+        #self.go_to_position(start_pre, 10000)
+        for point in points:
+            point_xyz = self.xy_to_xyz(point)
+            self.go_to_position(point_xyz, 5000)
+        #print("going to end post")
+        #self.go_to_position(end_post, 10000)
 
