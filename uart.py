@@ -24,6 +24,8 @@ class uart:
     canvas_corners = None #points of the four corners of the canvas (in robot arm coords)
     ptransform = None #contains the warped image of
     M = None #transformation matrix
+    xScale = None 
+    yScale = None 
 #
 #  __init__
 #      im = the image you're trying to paint
@@ -54,11 +56,17 @@ class uart:
         if initialized[3] and initialized[1]:
             print("moving")
             self.swift.set_position(x=150, y=0, z=50, speed = 10000, cmd = "G0")
-            self.swift.set_wrist(90)
+#            self.swift.set_wrist(20)
+#            time.sleep(1)
+#            self.swift.set_wrist(90)
             print("Setting four corners; input tl, tr, bl or br")
             self.canvas_corners = self.setFourCorners()
         else:
-            self.canvas_corners = [[271.41, 100.41, 160.48], [271.48, -88.76, 162.2], [196.59, 85.7, -97.66], [195.83, -82.88, -90.02]] 
+            self.canvas_corners = [
+            [243,50,105], #tl
+            [243,-50,105],#tr
+            [219,50,-10],#bl
+            [219,-50,-10]]#br 
             print("Setting four corners to default coordinates")
 
         if initialized[4]:
@@ -66,8 +74,32 @@ class uart:
             self.ptransform = perspective.PerspectiveTransform(cap)
 
         self.M = self.get_m(200,200)
+
+        self.xScale = self.get_scale(len(im[0]),[self.canvas_corners[0],self.canvas_corners[1]])
+        self.yScale = self.get_scale(len(im),[self.canvas_corners[0],self.canvas_corners[2]])
+
         print("Arm all set up!")
-    
+
+#
+#	new xy to xyz function using algebra/geometry
+#
+
+    def xy_to_xyz2(self, xy):
+        #print("xy", xy)
+        #print("xscale", self.xScale)
+        #print("yscale", self.yScale)
+        out = np.add(np.multiply(xy[0],self.xScale) + np.multiply(xy[1],self.yScale), self.canvas_corners[0])
+        print(out)
+        return out
+
+#
+#	GET SCALE
+#
+
+    def get_scale(self, pix, corners):
+        dif = np.subtract(corners[0], corners[1])
+        return -(dif/pix)
+
 #
 #	HEAT MAP
 #
@@ -79,8 +111,8 @@ class uart:
         print(subtraction)
 
         heatmap = np.full(im.shape,255, dtype='uint8')
-
         print(heatmap.shape)
+
         for i in range(subtraction.shape[0]):
             for j in range(subtraction.shape[1]):
                 if (subtraction[i][j] < 0):
@@ -89,7 +121,6 @@ class uart:
                 elif (subtraction[i][j] > 0):
                     heatmap[i][j][2] -= abs(subtraction[i][j])
                     heatmap[i][j][1] -= abs(subtraction[i][j])
-
         return heatmap
 
 #
@@ -144,6 +175,7 @@ class uart:
                 self.swift.set_wrist(angle)
                 moveWrist = False
                 time.sleep(1)
+
                 
         coordinates.close()
 
@@ -250,6 +282,7 @@ class uart:
 #    go to position
 #
     def go_to_position(self, xyz, f):
+        print('going to : ', xyz)
         self.swift.set_position(x=xyz[0], y=xyz[1], z=xyz[2], speed = f, cmd = "G0")
 #:        time.sleep(1)
 
@@ -258,11 +291,11 @@ class uart:
 #
 #    start and end: [x,y]
     def draw_line(self, start, end):
-        startxyz = self.xy_to_xyz(start)
-        endxyz = self.xy_to_xyz(end)
+        startxyz = self.xy_to_xyz2(start)
+        endxyz = self.xy_to_xyz2(end)
 
-        start_pre = [startxyz[0]-50, startxyz[1], startxyz[2]]
-        end_post = [endxyz[0]-50, endxyz[1], endxyz[2]]
+        start_pre = [startxyz[0]-20, startxyz[1], startxyz[2]]
+        end_post = [endxyz[0]-20, endxyz[1], endxyz[2]]
         print("going to start pre")
         self.go_to_position(start_pre, 10000)
         print("going to start")
@@ -277,18 +310,19 @@ class uart:
 #    draws a line, by moving across a list of points
 #
     def draw_line2(self, points):
-        startxyz = self.xy_to_xyz(points[0])
-        endxyz = self.xy_to_xyz(points[-1])
-        start_pre = [startxyz[0]-40, startxyz[1], startxyz[2]]
-        end_post = [endxyz[0]-40, endxyz[1], endxyz[2]]
+
+        startxyz = self.xy_to_xyz2(points[0])
+        endxyz = self.xy_to_xyz2(points[-1])
+        start_pre = [startxyz[0]-8, startxyz[1], startxyz[2]]
+        end_post = [endxyz[0]-8, endxyz[1], endxyz[2]]
 
         #print("going to start pre")
-        #self.go_to_position(start_pre, 10000)
+        self.go_to_position(start_pre, 10000)
         for point in points:
-            point_xyz = self.xy_to_xyz(point)
+            point_xyz = self.xy_to_xyz2(point)
             self.go_to_position(point_xyz, 5000)
         #print("going to end post")
-        #self.go_to_position(end_post, 10000)
+        self.go_to_position(end_post, 10000)
 
 #
 #
@@ -296,15 +330,12 @@ class uart:
 #    does NOT go to pre and post painting position
 #
     def draw_line3(self, points):
-        startxyz = self.xy_to_xyz(points[0])
-        endxyz = self.xy_to_xyz(points[-1])
-        start_pre = [startxyz[0]-40, startxyz[1], startxyz[2]]
-        end_post = [endxyz[0]-40, endxyz[1], endxyz[2]]
-
+        startxyz = self.xy_to_xyz2(points[0])
+        endxyz = self.xy_to_xyz2(points[-1])
         #print("going to start pre")
         #self.go_to_position(start_pre, 10000)
         for point in points:
-            point_xyz = self.xy_to_xyz(point)
+            point_xyz = self.xy_to_xyz2(point)
             self.go_to_position(point_xyz, 5000)
         #print("going to end post")
         #self.go_to_position(end_post, 10000)
