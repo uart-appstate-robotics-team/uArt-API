@@ -63,10 +63,10 @@ class uart:
             self.canvas_corners = self.setFourCorners()
         else:
             self.canvas_corners = [
-            [243,50,105], #tl
-            [243,-50,105],#tr
-            [219,50,-10],#bl
-            [219,-50,-10]]#br 
+            [263,50,103], #tl
+            [263,-50,103],#tr
+            [241,50,-12],#bl
+            [241,-50,-12]]#br 
             print("Setting four corners to default coordinates")
 
         if initialized[4]:
