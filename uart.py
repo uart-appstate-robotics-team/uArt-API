@@ -15,29 +15,47 @@ from uarm.wrapper import SwiftAPI
 from uarm.tools.list_ports import get_ports
 
 class uart:
-    available_pixel = {} #rgb values of all the paints
-    swift = None #robot arm object
+
+    #rgb values of all the paints
+    available_pixel = {}
+
+    #robot arm object
+    swift = None 
     device_info = None 
     firmware_version = None
-    image = None #image you're trying to paint
-    canvas = None #image of the canvas as you're working on it
-    canvas_corners = None #points of the four corners of the canvas (in robot arm coords)
-    ptransform = None #contains the warped image of
-    M = None #transformation matrix
+
+    #image you're trying to paint
+    image = None
+
+    #image of the canvas as you're working on it
+    canvas = None
+
+    #points of the four corners of the canvas (in robot arm coords)
+    canvas_corners = None
+
+    #contains the warped image of
+    ptransform = None
+
+    #transformation matrix
+    M = None 
     xScale = None 
     yScale = None 
-#
-#  __init__
-#      im = the image you're trying to paint
-#      pixels = the dictionary of colors you have access to
-#      initialized = a list of booleans determining which values you will initialize
-#          [ True = available_pixel uses pixels parameter otherwise use defaults,
-#            True = set swift to SwiftAPI object otherwise set them to None,
-#            True = set image to a blank white 200x200 image,
-#            True = calibrate canvas_corners using setFourCorners otherwise set to a preset
-#            True = set ptransform using the webcam
-#          ]
-#    
+
+    DRAW_DISTANCE = 5000
+    LIFT_DISTANCE = 10000
+
+    """
+    __init__
+        im = the image you're trying to paint
+        pixels = the dictionary of colors you have access to
+        initialized = a list of booleans determining which values you will initialize
+            0: available_pixel uses pixels parameter otherwise use defaults,
+            1: set swift to SwiftAPI object otherwise set them to None,
+            2: set image to a blank white 200x200 image,
+            3: calibrate canvas_corners using setFourCorners otherwise set to a preset
+            4: set ptransform using the webcam
+            ]
+    """  
     def __init__(self, im, pixels, initialized):
         if initialized[0]:
             self.available_pixel = pixels
@@ -56,17 +74,14 @@ class uart:
         if initialized[3] and initialized[1]:
             print("moving")
             self.swift.set_position(x=150, y=0, z=50, speed = 10000, cmd = "G0")
-#            self.swift.set_wrist(20)
-#            time.sleep(1)
-#            self.swift.set_wrist(90)
             print("Setting four corners; input tl, tr, bl or br")
             self.canvas_corners = self.setFourCorners()
         else:
             self.canvas_corners = [
             [263,50,103], #tl
-            [263,-50,103],#tr
-            [241,50,-12],#bl
-            [241,-50,-12]]#br 
+            [263,-50,103], #tr
+            [241,50,-12], #bl
+            [241,-50,-12]] #br 
             print("Setting four corners to default coordinates")
 
         if initialized[4]:
@@ -80,11 +95,10 @@ class uart:
 
         print("Arm all set up!")
 
-#
-#	new xy to xyz function using algebra/geometry
-#
-
-    def xy_to_xyz2(self, xy):
+    """
+    new xy to xyz function using algebra/geometry
+    """
+    def xy_to_xyz_geom(self, xy):
         #print("xy", xy)
         #print("xscale", self.xScale)
         #print("yscale", self.yScale)
@@ -92,17 +106,17 @@ class uart:
         print(out)
         return out
 
-#
-#	GET SCALE
-#
+    """
+    GET SCALE
+    """
 
     def get_scale(self, pix, corners):
         dif = np.subtract(corners[0], corners[1])
         return -(dif/pix)
 
-#
-#	HEAT MAP
-#
+    """
+    HEAT MAP
+    """
     def generate_heatmap(self):
         image = self.image.astype(dtype='int32')
         canvas = self.ptransform.warped.astype(dtype='int32')
@@ -123,9 +137,9 @@ class uart:
                     heatmap[i][j][1] -= abs(subtraction[i][j])
         return heatmap
 
-#
-#       GETS CLOSEST COLOR
-#
+    """
+    GETS CLOSEST COLOR
+    """
     def get_closest_color(self, chosen_pixel):
         available_pixel = self.available_pixel
         distances = []
@@ -140,10 +154,9 @@ class uart:
 
         return curr_key
 
-#
-#   move_to_file
-#
-
+    """
+    move_to_file
+    """
     def move_to_file(self, filename):
         var = []
         count = 0
@@ -168,7 +181,7 @@ class uart:
                     angle = float(word[1:])
 
             if(moveArm):
-                self.swift.set_position(x=x, y=y, z=z, speed =f, cmd = "G0")
+                self.swift.set_position(x, y, z, speed = f, cmd = "G0")
                 moveArm = False
                 time.sleep(1)
             if(moveWrist):
@@ -180,9 +193,9 @@ class uart:
         coordinates.close()
 
 
-#
-# SETTING FOUR CORNERS
-#
+    """
+    SETTING FOUR CORNERS
+    """
     def setFourCorners(self):
          speed_s = 10000
          delay = 1
@@ -216,10 +229,10 @@ class uart:
 
 
 
-#
-# SAVED COORDS TO FILE
-#
-    def saveCoordsToFile(self, fn):
+    """
+    SAVED COORDS TO FILE
+    """
+    def save_coords_to_file(self, fn):
         delay = 1
 
         coords = []
@@ -240,7 +253,7 @@ class uart:
         file = open(fn + ".uar", "w+")
         for c in coords:
             if not check(c):
-                file.write("G0 X%f Y%f Z%f F5000\n" %(c[0], c[1], c[2]))
+                file.write("G0 X{} Y{} Z{} F5000\n".format(c[0], c[1], c[2]))
             else:
                 self.set_wrist(c)
                 file.write("WA " %(c))
@@ -255,9 +268,9 @@ class uart:
         except:
             return False
 
-#
-# GET M
-#
+    """
+    GET M
+    """
     def get_m(self, width, height):
         A = np.transpose(self.canvas_corners)
         print(A)
@@ -270,73 +283,94 @@ class uart:
         print(M)
         return M
 
-#
-#    xytoxyz
-#
+
+    """
+    xytoxyz
+    !!DEPRICATED: use xy_to_xyz_geom!!
+    """
     def xy_to_xyz(self,xy):
         xyz = [xy[0],xy[1],1]
         xyz = np.transpose(xyz)
         return np.matmul(self.M,xyz)
 
-#
-#    go to position
-#
+    """
+    go to position
+    """
     def go_to_position(self, xyz, f):
         print('going to : ', xyz)
         self.swift.set_position(x=xyz[0], y=xyz[1], z=xyz[2], speed = f, cmd = "G0")
-#:        time.sleep(1)
 
-#
-#    draw a line
-#
-#    start and end: [x,y]
-    def draw_line(self, start, end):
-        startxyz = self.xy_to_xyz2(start)
-        endxyz = self.xy_to_xyz2(end)
+    """
+    draw a line
+
+    start and end: [x,y]
+    """
+    def draw_line(self, start_point, end_point):
+        startxyz = self.xy_to_xyz_geom(start_point)
+        endxyz = self.xy_to_xyz_geom(end_point)
 
         start_pre = [startxyz[0]-20, startxyz[1], startxyz[2]]
         end_post = [endxyz[0]-20, endxyz[1], endxyz[2]]
         print("going to start pre")
-        self.go_to_position(start_pre, 10000)
+        self.go_to_position(start_pre, LIFT_DISTANCE)
         print("going to start")
-        self.go_to_position(startxyz, 5000)
+        self.go_to_position(startxyz, DRAW_DISTANCE)
         print("going to end")
-        self.go_to_position(endxyz, 5000)
+        self.go_to_position(endxyz, DRAW_DISTANCE)
         print("going to end post")
-        self.go_to_position(end_post, 10000)
+        self.go_to_position(end_post, LIFT_DISTANCE)
 
-#
-#
-#    draws a line, by moving across a list of points
-#
+    """
+    draw_point draws a point on the canvas
+    """
+    def draw_point(self, point):
+        point_xyz = self.xy_to_xyz_geom(start)
+
+        point_lifted = [point_xyz[0]-20, point_xyz[1], point_xyz[2]]
+        print("going to pre point")
+        self.go_to_position(point_lifted, LIFT_DISTANCE)
+        print("going to point")
+        self.go_to_position(point_xyz, DRAW_DISTANCE)
+        print("lifting")
+        self.go_to_position(point_lifted, LIFT_DISTANCE)
+
+    """
+    draw_points calls draw_point over a list of points
+    """
+    def draw_points(self, points):
+        for point in points:
+            self.draw_point(point)
+
+
+
+
+    """
+    draws a line, by moving across a list of points
+    """
     def draw_line2(self, points):
 
-        startxyz = self.xy_to_xyz2(points[0])
-        endxyz = self.xy_to_xyz2(points[-1])
+        startxyz = self.xy_to_xyz_geom(points[0])
+        endxyz = self.xy_to_xyz_geom(points[-1])
         start_pre = [startxyz[0]-8, startxyz[1], startxyz[2]]
         end_post = [endxyz[0]-8, endxyz[1], endxyz[2]]
 
-        #print("going to start pre")
-        self.go_to_position(start_pre, 10000)
-        for point in points:
-            point_xyz = self.xy_to_xyz2(point)
-            self.go_to_position(point_xyz, 5000)
-        #print("going to end post")
-        self.go_to_position(end_post, 10000)
+        self.go_to_position(start_pre, LIFT_DISTANCE)
 
-#
-#
-#    draws a line, by moving across a list of points
-#    does NOT go to pre and post painting position
-#
-    def draw_line3(self, points):
-        startxyz = self.xy_to_xyz2(points[0])
-        endxyz = self.xy_to_xyz2(points[-1])
-        #print("going to start pre")
-        #self.go_to_position(start_pre, 10000)
         for point in points:
-            point_xyz = self.xy_to_xyz2(point)
-            self.go_to_position(point_xyz, 5000)
-        #print("going to end post")
-        #self.go_to_position(end_post, 10000)
+            point_xyz = self.xy_to_xyz_geom(point)
+            self.go_to_position(point_xyz, DRAW_DISTANCE)
+
+        self.go_to_position(end_post, LIFT_DISTANCE)
+
+
+    """
+    draws a line, by moving across a list of points
+    does NOT go to pre and post painting position
+    """
+    def draw_line3(self, points):
+        startxyz = self.xy_to_xyz_geom(points[0])
+        endxyz = self.xy_to_xyz_geom(points[-1])
+        for point in points:
+            point_xyz = self.xy_to_xyz_geom(point)
+            self.go_to_position(point_xyz, DRAW_DISTANCE)
 
