@@ -4,11 +4,12 @@ import sys
 import time
 import threading
 
-from .perspective import PerspectiveTransform
+from perspective import PerspectiveTransform
 
 import cv2
 
 from PIL import Image
+
 
 # sys.path.append(os.path.join(os.path.dirname(_file_), '../../..'))
 from uarm.wrapper import SwiftAPI
@@ -87,11 +88,11 @@ class uart:
             self.canvas_corners = self.setFourCorners()
         else:
             self.canvas_corners = [
-                [263, 50, 103],  # tl
-                [263, -50, 103],  # tr
-                [241, 50, -12],  # bl
-                [241, -50, -12],
-            ]  # br
+                [263,52,103], #tl
+                [264,-50,105],#tr
+                [240,50,-12],#bl
+                [245,-50,-15]]#br
+
             print("Setting four corners to default coordinates")
 
         if initialized[4]:
@@ -333,28 +334,107 @@ class uart:
         start_pre = [startxyz[0] - 20, startxyz[1], startxyz[2]]
         end_post = [endxyz[0] - 20, endxyz[1], endxyz[2]]
         print("going to start pre")
-        self.go_to_position(start_pre, LIFT_SPEED)
+        self.go_to_position(start_pre, self.LIFT_SPEED)
         print("going to start")
-        self.go_to_position(startxyz, DRAW_SPEED)
+        self.go_to_position(startxyz, self.DRAW_SPEED)
         print("going to end")
-        self.go_to_position(endxyz, DRAW_SPEED)
+        self.go_to_position(endxyz, self.DRAW_SPEED)
         print("going to end post")
-        self.go_to_position(end_post, LIFT_SPEED)
+        self.go_to_position(end_post, self.LIFT_SPEED)
+
+
+
 
     """
     draw_point draws a point on the canvas
     """
 
     def draw_point(self, point):
-        point_xyz = self.xy_to_xyz_geom(start)
+        point = point[0]
+        print(point)
+        point_xyz = self.xy_to_xyz_geom(point)
 
         point_lifted = [point_xyz[0] - 20, point_xyz[1], point_xyz[2]]
         print("going to pre point")
-        self.go_to_position(point_lifted, LIFT_SPEED)
+        self.go_to_position(point_lifted, self.LIFT_SPEED)
         print("going to point")
-        self.go_to_position(point_xyz, DRAW_SPEED)
+        self.go_to_position(point_xyz, self.DRAW_SPEED)
         print("lifting")
-        self.go_to_position(point_lifted, LIFT_SPEED)
+        self.go_to_position(point_lifted, self.LIFT_SPEED)
+
+    """
+    Fill black prints by scanning over an image
+    """
+
+    def fill_solid(self, image):
+        lifted = False
+        point = None
+        for i, x in enumerate(image):
+            for j, col in enumerate(x):
+                nextpoint = (j, i)
+                if point is not None:
+                    if col == 0:
+                        point_xyz = self.xy_to_xyz_geom(point)
+
+                        # If you are previously lifted, go to a pre-position
+                        if lifted:
+                            lifted_pos = [point_xyz[0] - 20, point_xyz[1], point_xyz[2]]
+                            self.go_to_position(lifted_pos, self.LIFT_SPEED)
+
+                        self.go_to_position(point_xyz, self.DRAW_SPEED)
+                        lifted = False
+                    else:
+                        if not lifted:
+                            point_xyz = self.xy_to_xyz_geom(point)
+                            lifted_pos = [point_xyz[0] - 20, point_xyz[1], point_xyz[2]]
+                            self.go_to_position(lifted_pos, self.LIFT_SPEED)
+                        lifted = True
+                point = nextpoint
+
+    """
+    draws the signature passed in
+    """
+    def xy_to_xyz_sig(self, xy, xscale, yscale):
+        out = np.add(
+            np.multiply(xy[0], xscale) + np.multiply(xy[1], yscale),
+            self.canvas_corners[0],
+        )
+        print(out)
+        return out
+
+    """
+    draws a line, by moving across a list of points
+    does NOT go to pre and post painting position
+
+    CALLS SIGNATURE FUNCTIONS
+    """
+
+    def draw_line_sig(self, points, xscale, yscale):
+        startxyz = self.xy_to_xyz_sig(points[0],xscale,yscale)
+        endxyz = self.xy_to_xyz_sig(points[-1],xscale,yscale)
+        start_pre = [startxyz[0] - 8, startxyz[1], startxyz[2]]
+        end_post = [endxyz[0] - 8, endxyz[1], endxyz[2]]
+
+        self.go_to_position(start_pre, self.LIFT_SPEED)
+
+        for point in points:
+            point_xyz = self.xy_to_xyz_sig(point,xscale,yscale)
+            self.go_to_position(point_xyz, self.DRAW_SPEED*.5)
+
+        self.go_to_position(end_post, self.LIFT_SPEED)
+
+    def draw_signature(self, image):
+        from area_fill_horizontal import area_fill_horizontal
+        lines = area_fill_horizontal(image)
+        xscale = self.get_scale(
+            115, [self.canvas_corners[0], self.canvas_corners[1]]
+        )
+        yscale = self.get_scale(
+            115, [self.canvas_corners[0], self.canvas_corners[2]]
+        )
+        for line in lines:
+            self.draw_line_sig(line, xscale, yscale)
+
 
     """
     draw_points calls draw_point over a list of points
@@ -369,19 +449,18 @@ class uart:
     """
 
     def draw_line2(self, points):
-
         startxyz = self.xy_to_xyz_geom(points[0])
         endxyz = self.xy_to_xyz_geom(points[-1])
         start_pre = [startxyz[0] - 8, startxyz[1], startxyz[2]]
         end_post = [endxyz[0] - 8, endxyz[1], endxyz[2]]
 
-        self.go_to_position(start_pre, LIFT_SPEED)
+        self.go_to_position(start_pre, self.LIFT_SPEED)
 
         for point in points:
             point_xyz = self.xy_to_xyz_geom(point)
-            self.go_to_position(point_xyz, DRAW_SPEED)
+            self.go_to_position(point_xyz, self.DRAW_SPEED)
 
-        self.go_to_position(end_post, LIFT_SPEED)
+        self.go_to_position(end_post, self.LIFT_SPEED)
 
     """
     draws a line, by moving across a list of points
@@ -393,4 +472,4 @@ class uart:
         endxyz = self.xy_to_xyz_geom(points[-1])
         for point in points:
             point_xyz = self.xy_to_xyz_geom(point)
-            self.go_to_position(point_xyz, DRAW_SPEED)
+            self.go_to_position(point_xyz, self.DRAW_SPEED)
