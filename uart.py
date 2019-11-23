@@ -39,7 +39,6 @@ class uart:
     ptransform = None
 
     # transformation matrix
-    M = None
     xScale = None
     yScale = None
 
@@ -99,8 +98,6 @@ class uart:
             _, cap = cv2.VideoCapture(0).read()
             self.ptransform = perspective.PerspectiveTransform(cap)
 
-        self.M = self.get_m(200, 200)
-
         self.xScale = self.get_scale(
             len(im[0]), [self.canvas_corners[0], self.canvas_corners[1]]
         )
@@ -137,11 +134,15 @@ class uart:
     HEAT MAP
     """
 
-    def generate_heatmap(self):
+    def perspective_heatmap(self):
         image = self.image.astype(dtype="int32")
         canvas = self.ptransform.warped.astype(dtype="int32")
+        return generate_heatmap(image, canvas)
 
-        subtraction = np.subtract(image, canvas)
+    def generate_heatmap(self, image1, image2):
+        image1 = image1.astype(dtype="int32")
+        image2 = image2.astype(dtype="int32")
+        subtraction = np.subtract(image1, image2)
         print(subtraction)
 
         heatmap = np.full(im.shape, 255, dtype="uint8")
@@ -156,6 +157,12 @@ class uart:
                     heatmap[i][j][2] -= abs(subtraction[i][j])
                     heatmap[i][j][1] -= abs(subtraction[i][j])
         return heatmap
+
+    def grayscale_heatmap(self, image1, image2):
+        image1 = image1.astype(dtype="int32")
+        image2 = image2.astype(dtype="int32")
+        subtraction = np.subtract(image1, image2)
+        return subtraction
 
     """
     GETS CLOSEST COLOR
@@ -288,32 +295,6 @@ class uart:
             return False
 
     """
-    GET M
-    """
-
-    def get_m(self, width, height):
-        A = np.transpose(self.canvas_corners)
-        print(A)
-        B = [[0, 0, 1], [width, 0, 1], [0, height, 1], [width, height, 1]]
-        B = np.transpose(B)
-        print(B)
-        pinvB = np.linalg.pinv(B)
-        print(pinvB)
-        M = np.matmul(A, np.linalg.pinv(B))
-        print(M)
-        return M
-
-    """
-    xytoxyz
-    !!DEPRICATED: use xy_to_xyz_geom!!
-    """
-
-    def xy_to_xyz(self, xy):
-        xyz = [xy[0], xy[1], 1]
-        xyz = np.transpose(xyz)
-        return np.matmul(self.M, xyz)
-
-    """
     go to position
     """
 
@@ -341,9 +322,6 @@ class uart:
         self.go_to_position(endxyz, self.DRAW_SPEED)
         print("going to end post")
         self.go_to_position(end_post, self.LIFT_SPEED)
-
-
-
 
     """
     draw_point draws a point on the canvas
@@ -434,7 +412,6 @@ class uart:
         )
         for line in lines:
             self.draw_line_sig(line, xscale, yscale)
-
 
     """
     draw_points calls draw_point over a list of points
