@@ -4,7 +4,7 @@ import sys
 import time
 import threading
 
-from perspective import PerspectiveTransform
+#from perspective import PerspectiveTransform
 
 import cv2
 
@@ -354,7 +354,7 @@ class uart:
         print(point)
         point_xyz = self.xy_to_xyz_geom(point)
 
-        point_lifted = [point_xyz[0] - 20, point_xyz[1], point_xyz[2]]
+        point_lifted = [point_xyz[0] - 10, point_xyz[1], point_xyz[2]]
         print("going to pre point")
         self.go_to_position(point_lifted, self.LIFT_SPEED)
         print("going to point")
