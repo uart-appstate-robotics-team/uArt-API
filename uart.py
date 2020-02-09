@@ -81,7 +81,7 @@ class uart:
 
         if initialized[3] and initialized[1]:
             print("moving")
-            self.swift.set_position(x=150, y=0, z=50, speed=10000, cmd="G0")
+            self.go_home()
             print("Setting four corners; input tl, tr, bl or br")
             self.canvas_corners = self.setFourCorners()
         else:
@@ -108,6 +108,13 @@ class uart:
         )
 
         print("Arm all set up!")
+
+    """
+    GO HOME
+    sends the robot to it's home coordinate
+    """
+    def go_home(self):
+        self.go_to_position([125,0,50],10000)
 
     """
     new xy to xyz function using algebra/geometry
@@ -192,26 +199,27 @@ class uart:
         var = []
         count = 0
         lines = open(filename, "r").read().split("\n")
+        del lines[-1]
         x, y, z, f, angle = 0,0,0,0,0
         moveArm = False
+        #print(lines)
 
         for i in range(len(lines)):
             for word in lines[i].split(" "):
-                if word is "G0":
-                    moveArm = True
-                    if word[0] is "X":
-                        x = float(word[1:])
-                    elif word[0] is "Y":
-                        y = float(word[1:])
-                    elif word[0] is "Z":
-                        z = float(word[1:])
-                    elif word[0] is "F":
-                        f = float(word[1:])
+                #print(word)
+                if word[0] == "X":
+                    x = float(word[1:])
+                elif word[0] == "Y":
+                    y = float(word[1:])
+                elif word[0] == "Z":
+                    z = float(word[1:])
+                elif word[0] == "F":
+                    f = float(word[1:])
 
-            if moveArm:
-                self.swift.set_position(x, y, z, speed=f, cmd="G0")
-                moveArm = False
-                time.sleep(1)
+            #print("GO GO GO")
+            #print(x,y,z,f)
+            self.swift.set_position(x, y, z, speed=f, cmd="G0")
+            time.sleep(1)
 
     """
     SETTING FOUR CORNERS
@@ -265,7 +273,7 @@ class uart:
 
         coords = []
         while True:
-            newCoord = [x, y, z]
+            newCoord = self.swift.get_position() 
             print("current coord:",newCoord)
             key = input("type save to save current position\ntype done to break\nhit enter to do nothing\n")
             if key == "save":
@@ -300,7 +308,7 @@ class uart:
             except:
                 z = z
 
-            self.swift.set_position(x=x,y=y,z=z, speed = 10000, cmd = "G0")
+            self.go_to_position([x,y,z],10000)
 
         #self.move_to_file(str(fn + ".uar"))
         return coords
