@@ -97,6 +97,9 @@ class uart:
             _, cap = cv2.VideoCapture(0).read()
             self.ptransform = perspective.PerspectiveTransform(cap)
 
+
+        #print(self.canvas_corners)
+        #print(im)
         self.xScale = self.get_scale(
             len(im[0]), [self.canvas_corners[0], self.canvas_corners[1]]
         )
@@ -189,8 +192,8 @@ class uart:
         var = []
         count = 0
         lines = open(filename, "r").read().split("\n")
-        x, y, z, f, angle = 0
-        moveArm, moveWrist = False
+        x, y, z, f, angle = 0,0,0,0,0
+        moveArm = False
 
         for i in range(len(lines)):
             for word in lines[i].split(" "):
@@ -204,20 +207,11 @@ class uart:
                         z = float(word[1:])
                     elif word[0] == "F":
                         f = float(word[1:])
-                elif word == "WA":
-                    moveWrist = True
-                    angle = float(word[1:])
 
             if moveArm:
                 self.swift.set_position(x, y, z, speed=f, cmd="G0")
                 moveArm = False
                 time.sleep(1)
-            if moveWrist:
-                self.swift.set_wrist(angle)
-                moveWrist = False
-                time.sleep(1)
-
-        coordinates.close()
 
     """
     SETTING FOUR CORNERS
@@ -256,42 +250,60 @@ class uart:
 
     """
     SAVED COORDS TO FILE
+
     """
 
     def save_coords_to_file(self, fn):
         delay = 1
 
+        xinput = 0
+        yinput = 0
+        zinput = 0
+        x = 0
+        y = 0
+        z = 0
+
         coords = []
         while True:
-            key = input()
+            newCoord = [x, y, z]
+            print("current coord:",newCoord)
+            key = input("type save to save current position\ntype done to break\nhit enter to do nothing\n")
             if key == "save":
-                newCoord = swift.get_position()
                 coords.append(newCoord)
+                print(coords)
                 print("New coordinate saved as" + str(newCoord))
             elif key == "done":
+                print("hello world")
+                print(coords)
+                with open(fn + ".uar", "a+") as fp:
+                    for c in coords:
+                        print("writing")
+                        fp.write("G0 X{} Y{} Z{} F5000\n".format(c[0], c[1], c[2]))
                 break
-            elif key.isdigit():
-                coords.append(int(key))
 
-        if os.path.exists(fn + ".uar"):
-            os.remove(fn + ".uar")
-        file = open(fn + ".uar", "w+")
-        for c in coords:
-            if not check(c):
-                file.write("G0 X{} Y{} Z{} F5000\n".format(c[0], c[1], c[2]))
-            else:
-                self.set_wrist(c)
-                file.write("WA " % (c))
-        coordinates.close()
-        moveTo(fn + ".uar")
+            print(self.swift.get_position())
+            xinput = input('input for x')
+            try:
+                x = float(xinput)
+            except:
+                x = x
+
+            yinput = input('input for y')
+            try:
+                y = float(yinput)
+            except:
+                y = y
+
+            zinput = input('input for z')
+            try:
+                z = float(zinput)
+            except:
+                z = z
+
+            self.swift.set_position(x=x,y=y,z=z, speed = 10000, cmd = "G0")
+
+        #self.move_to_file(str(fn + ".uar"))
         return coords
-
-    def check(inp):
-        try:
-            num_float = float(inp)
-            return True
-        except:
-            return False
 
     """
     go to position
