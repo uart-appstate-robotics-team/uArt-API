@@ -231,7 +231,7 @@ class uart:
             #print("GO GO GO")
             #print(x,y,z,f)
             self.swift.set_position(x, y, z, speed=f, cmd="G0")
-            time.sleep(1)
+            #time.sleep(1)
 
     """
     SETTING FOUR CORNERS
