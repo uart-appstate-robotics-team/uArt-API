@@ -86,11 +86,12 @@ class uart:
             self.canvas_corners = self.setFourCorners()
         else:
             self.canvas_corners = [
-                [263, 50, 103],  # tl
-                [263, -50, 103],  # tr
-                [241, 50, -12],  # bl
-                [241, -50, -12],
-            ]  # br
+                [230, 80, 168],  # tl
+                [230, -85, 168],  # tr
+                [228, 80, -40],  # bl
+                [228, -85, -40], #br
+            ]  
+
             print("Setting four corners to default coordinates")
 
         if initialized[4]:
@@ -219,7 +220,7 @@ class uart:
             #print("GO GO GO")
             #print(x,y,z,f)
             self.swift.set_position(x, y, z, speed=f, cmd="G0")
-            time.sleep(1)
+            #time.sleep(1)
 
     """
     SETTING FOUR CORNERS
