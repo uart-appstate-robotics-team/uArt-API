@@ -85,6 +85,15 @@ class uart:
             print("Setting four corners; input tl, tr, bl or br")
             self.canvas_corners = self.setFourCorners()
         else:
+            # painting corners
+            # self.canvas_corners = [
+            #     [230, 80, 168],  # tl
+            #     [230, -85, 168],  # tr
+            #     [228, 80, -40],  # bl
+            #     [228, -85, -40], #br
+            # ]
+
+            # stippling/drawing corners
             self.canvas_corners = [
                 [230	,50	,153], 		#tl
                 [229.5	,-48.5	,154.5],	#tr
