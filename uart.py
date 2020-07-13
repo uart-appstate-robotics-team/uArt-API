@@ -17,7 +17,6 @@ from uarm.tools.list_ports import get_ports
 
 
 class uart:
-
     # rgb values of all the paints
     available_pixel = {}
 
@@ -47,7 +46,7 @@ class uart:
 
     """
     __init__
-        im = the image you're trying to paint
+        im = the image you're trying to paint/draw
         pixels = the dictionary of colors you have access to
         initialized = a list of booleans determining which values you will initialize
             0: available_pixel uses pixels parameter otherwise use defaults,
@@ -87,10 +86,10 @@ class uart:
             self.canvas_corners = self.setFourCorners()
         else:
             self.canvas_corners = [
-                [263,52,103], #tl
-                [264,-50,105],#tr
-                [240,50,-12],#bl
-                [245,-50,-15]]#br
+                [230	,50	,153], 		#tl
+                [229.5	,-48.5	,154.5],	#tr
+                [233	,47.5	,29],		#bl
+                [232.5	,-50.5	,31]]		#br
 
             print("Setting four corners to default coordinates")
 
@@ -195,17 +194,17 @@ class uart:
 
         for i in range(len(lines)):
             for word in lines[i].split(" "):
-                if word is "G0":
+                if word == "G0":
                     moveArm = True
-                    if word[0] is "X":
+                    if word[0] == "X":
                         x = float(word[1:])
-                    elif word[0] is "Y":
+                    elif word[0] == "Y":
                         y = float(word[1:])
-                    elif word[0] is "Z":
+                    elif word[0] == "Z":
                         z = float(word[1:])
-                    elif word[0] is "F":
+                    elif word[0] == "F":
                         f = float(word[1:])
-                elif word is "WA":
+                elif word == "WA":
                     moveWrist = True
                     angle = float(word[1:])
 
@@ -450,3 +449,5 @@ class uart:
         for point in points:
             point_xyz = self.xy_to_xyz_geom(point)
             self.go_to_position(point_xyz, self.DRAW_SPEED)
+
+
