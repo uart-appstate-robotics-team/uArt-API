@@ -11,7 +11,7 @@ class PerspectiveTransform:
 	def __init__(self, image):
 		width,height,channels = image.shape
 		print(width, height, channels)
-		oneXone = cv2.imread(os.path.split(os.path.abspath(__file__))[0] + "/images/1x1.png")
+		oneXone = cv2.imread(os.path.split(os.path.abspath(__file__))[0] + "/data/1x1.png")
 		print("cv2",oneXone)
 
 		self.selection = cv2.resize(oneXone, (height, width))
@@ -66,7 +66,7 @@ class PerspectiveTransform:
 			if key == ord("r"):
 				self.image = clone.copy()
 				self.points.clear()
-				selection = cv2.resize(cv2.imread("./images/1x1.png"), (height, width))	# if the 'c' key is pressed, break from the loop
+				selection = cv2.resize(cv2.imread("./data/1x1.png"), (height, width))	# if the 'c' key is pressed, break from the loop
 				lines = False
 			elif key == ord("c"):
 				break

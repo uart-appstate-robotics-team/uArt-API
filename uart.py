@@ -137,7 +137,7 @@ class uart:
             np.multiply(xy[0], self.xScale) + np.multiply(xy[1], self.yScale),
             self.canvas_corners[0],
         )
-        print(out)
+        #print(out)
         return out
 
     """
@@ -161,10 +161,10 @@ class uart:
         image1 = image1.astype(dtype="int32")
         image2 = image2.astype(dtype="int32")
         subtraction = np.subtract(image1, image2)
-        print(subtraction)
+        #print(subtraction)
 
         heatmap = np.full(im.shape, 255, dtype="uint8")
-        print(heatmap.shape)
+        #print(heatmap.shape)
 
         for i in range(subtraction.shape[0]):
             for j in range(subtraction.shape[1]):
@@ -327,7 +327,7 @@ class uart:
     """
 
     def go_to_position(self, xyz, f):
-        print("going to : ", xyz)
+        #print("going to : ", xyz)
         self.swift.set_position(x=xyz[0], y=xyz[1], z=xyz[2], speed=f, cmd="G0")
 
     """
@@ -342,13 +342,13 @@ class uart:
 
         start_pre = [startxyz[0] - 20, startxyz[1], startxyz[2]]
         end_post = [endxyz[0] - 20, endxyz[1], endxyz[2]]
-        print("going to start pre")
+        #print("going to start pre")
         self.go_to_position(start_pre, self.LIFT_SPEED)
-        print("going to start")
+        #print("going to start")
         self.go_to_position(startxyz, self.DRAW_SPEED)
-        print("going to end")
+        #print("going to end")
         self.go_to_position(endxyz, self.DRAW_SPEED)
-        print("going to end post")
+        #print("going to end post")
         self.go_to_position(end_post, self.LIFT_SPEED)
 
     """
@@ -357,15 +357,15 @@ class uart:
 
     def draw_point(self, point):
         point = point[0]
-        print(point)
+#        print(point)
         point_xyz = self.xy_to_xyz_geom(point)
 
         point_lifted = [point_xyz[0] - 10, point_xyz[1], point_xyz[2]]
-        print("going to pre point")
+#        print("going to pre point")
         self.go_to_position(point_lifted, self.LIFT_SPEED)
-        print("going to point")
+#        print("going to point")
         self.go_to_position(point_xyz, self.DRAW_SPEED)
-        print("lifting")
+#        print("lifting")
         self.go_to_position(point_lifted, self.LIFT_SPEED)
 
     """
