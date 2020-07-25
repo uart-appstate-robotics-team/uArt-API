@@ -1,4 +1,4 @@
-# expects a one channel image, puts the pen down if the value is equal to 0 
+# expects a one channel image, puts the pen down if the value is equal to 0
 def area_fill_horizontal(image):
     point = None
     points = [[]]
@@ -16,4 +16,5 @@ def area_fill_horizontal(image):
     del points[-1]
     return points
 
-
+# used for signature drawing function
+# most definitely a cleaner way to do this

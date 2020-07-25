@@ -86,19 +86,20 @@ class uart:
             self.canvas_corners = self.setFourCorners()
         else:
             # painting corners
-            # self.canvas_corners = [
-            #     [230, 80, 168],  # tl
-            #     [230, -85, 168],  # tr
-            #     [228, 80, -40],  # bl
-            #     [228, -85, -40], #br
-            # ]
+            self.canvas_corners = [
+             [230, 80, 168],  # tl
+             [230, -85, 168],  # tr
+             [228, 80, -40],  # bl
+             [228, -85, -40], #br
+            ]
 
             # stippling/drawing corners
-            self.canvas_corners = [
-                [230	,50	,153], 		#tl
-                [229.5	,-48.5	,154.5],	#tr
-                [233	,47.5	,29],		#bl
-                [232.5	,-50.5	,31]]		#br
+            #self.canvas_corners = [
+            #    [230	,50	,153], 		#tl
+            #    [229.5	,-48.5	,154.5],	#tr
+            #    [233	,47.5	,29],		#bl
+            #    [232.5	,-50.5	,31]		#br
+            #]
 
             print("Setting four corners to default coordinates")
 
@@ -216,7 +217,9 @@ class uart:
         for i in range(len(lines)):
             for word in lines[i].split(" "):
                 #print(word)
-                if word[0] == "X":
+                if word == "":
+                    pass
+                elif word[0] == "X":
                     x = float(word[1:])
                 elif word[0] == "Y":
                     y = float(word[1:])
@@ -225,9 +228,9 @@ class uart:
                 elif word[0] == "F":
                     f = float(word[1:])
 
-            #print("GO GO GO")
-            #print(x,y,z,f)
-            self.swift.set_position(x, y, z, speed=f, cmd="G0")
+            print("GO GO GO")
+            print(x,y,z,f)
+            self.go_to_position([x,y,z],f)
             #time.sleep(1)
 
     """
@@ -360,7 +363,7 @@ class uart:
 #        print(point)
         point_xyz = self.xy_to_xyz_geom(point)
 
-        point_lifted = [point_xyz[0] - 10, point_xyz[1], point_xyz[2]]
+        point_lifted = [point_xyz[0] - 6, point_xyz[1], point_xyz[2]]
 #        print("going to pre point")
         self.go_to_position(point_lifted, self.LIFT_SPEED)
 #        print("going to point")
@@ -446,8 +449,13 @@ class uart:
     """
 
     def draw_points(self, points):
+        point_counter = 0
+        num_points = len(points)
         for point in points:
+            point_counter += 1
             self.draw_point(point)
+            if (point_counter % (num_points//10)) == 0:
+                print(int((point_counter/num_points)*100),"% complete...")
 
     """
     draws a line, by moving across a list of points
