@@ -228,10 +228,10 @@ class uart:
                 elif word[0] == "F":
                     f = float(word[1:])
 
-            print("GO GO GO")
-            print(x,y,z,f)
-            self.go_to_position([x,y,z],f)
-            #time.sleep(1)
+            #print("GO GO GO")
+            #print(x,y,z,f)
+            self.swift.set_position(x, y, z, speed=f, cmd="G0")
+            time.sleep(1)
 
     """
     SETTING FOUR CORNERS
