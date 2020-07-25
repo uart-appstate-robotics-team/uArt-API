@@ -15,7 +15,6 @@ from PIL import Image
 from uarm.wrapper import SwiftAPI
 from uarm.tools.list_ports import get_ports
 
-
 class uart:
     # rgb values of all the paints
     available_pixel = {}
@@ -41,6 +40,9 @@ class uart:
     xScale = None
     yScale = None
 
+    # distance_traveled: how far your brush strokes have traveled
+    distance_traveled = 0 
+
     DRAW_SPEED = 5000
     LIFT_SPEED = 10000
 
@@ -48,7 +50,7 @@ class uart:
     __init__
         im = the image you're trying to paint/draw
         pixels = the dictionary of colors you have access to
-        initialized = a list of booleans determining which values you will initialize
+        initialized = a list of booleans determining which values you will initialize[
             0: available_pixel uses pixels parameter otherwise use defaults,
             1: set swift to SwiftAPI object otherwise set them to None,
             2: set image to a blank white 200x200 image,
@@ -104,9 +106,8 @@ class uart:
             print("Setting four corners to default coordinates")
 
         if initialized[4]:
-            _, cap = cv2.VideoCapture(0).read()
-            self.ptransform = perspective.PerspectiveTransform(cap)
-
+            _, cap = cv2.VideoCapture(1).read()
+            self.ptransform = PerspectiveTransform(cap)
 
         #print(self.canvas_corners)
         #print(im)
@@ -186,7 +187,6 @@ class uart:
     """
     GETS CLOSEST COLOR
     """
-
     def get_closest_color(self, chosen_pixel):
         available_pixel = self.available_pixel
         distances = []
@@ -200,6 +200,7 @@ class uart:
                 curr_key = key
 
         return curr_key
+
 
     """
     move_to_file
@@ -228,9 +229,9 @@ class uart:
                 elif word[0] == "F":
                     f = float(word[1:])
 
-            print("GO GO GO")
-            print(x,y,z,f)
-            self.go_to_position([x,y,z],f)
+            #print("GO GO GO")
+            #print(x,y,z,f)
+            self.swift.set_position(x, y, z, speed=f, cmd="G0")
             #time.sleep(1)
 
     """
@@ -326,9 +327,34 @@ class uart:
         return coords
 
     """
+    add_distance_traveled
+
+    adds val to self.distance_traveled
+    """
+    def add_distance_traveled(self, val):
+        self.distance_traveled += val
+        return self.distance_traveled
+
+    """
+    reset_distance
+
+    sets self.distance_traveled to 0
+    """
+    def reset_distance_traveled(self):
+        self.distance_traveled = 0 
+
+
+    """
+    get_distance
+
+    returns the distance between two 2D points
+    """
+    def get_distance(self, point1, point2):
+        return np.linalg.norm(np.subtract(point1,point2))
+
+    """
     go to position
     """
-
     def go_to_position(self, xyz, f):
         #print("going to : ", xyz)
         self.swift.set_position(x=xyz[0], y=xyz[1], z=xyz[2], speed=f, cmd="G0")
@@ -338,7 +364,6 @@ class uart:
 
     start and end: [x,y]
     """
-
     def draw_line(self, start_point, end_point):
         startxyz = self.xy_to_xyz_geom(start_point)
         endxyz = self.xy_to_xyz_geom(end_point)
@@ -357,7 +382,6 @@ class uart:
     """
     draw_point draws a point on the canvas
     """
-
     def draw_point(self, point):
         point = point[0]
 #        print(point)
@@ -453,6 +477,8 @@ class uart:
         num_points = len(points)
         for point in points:
             point_counter += 1
+            dist = 1
+            self.add_distance_traveled(dist)
             self.draw_point(point)
             if (point_counter % (num_points//10)) == 0:
                 print(int((point_counter/num_points)*100),"% complete...")
@@ -464,12 +490,18 @@ class uart:
     def draw_line2(self, points):
         startxyz = self.xy_to_xyz_geom(points[0])
         endxyz = self.xy_to_xyz_geom(points[-1])
-        start_pre = [startxyz[0] - 8, startxyz[1], startxyz[2]]
-        end_post = [endxyz[0] - 8, endxyz[1], endxyz[2]]
+        start_pre = [startxyz[0] - 9, startxyz[1], startxyz[2]]
+        end_post = [endxyz[0] - 9, endxyz[1], endxyz[2]]
 
         self.go_to_position(start_pre, self.LIFT_SPEED)
 
-        for point in points:
+        for i, point in enumerate(points):
+            if i > 0:
+                dist = self.get_distance(points[i],points[i-1])
+            else:
+                dist = 8
+            self.add_distance_traveled(dist)
+
             point_xyz = self.xy_to_xyz_geom(point)
             self.go_to_position(point_xyz, self.DRAW_SPEED)
 
@@ -483,8 +515,13 @@ class uart:
     def draw_line3(self, points):
         startxyz = self.xy_to_xyz_geom(points[0])
         endxyz = self.xy_to_xyz_geom(points[-1])
-        for point in points:
+        for i, point in enumerate(points):
+            if i > 0:
+                dist = self.get_distance(points[i],points[i-1])
+            else:
+                dist = 1
+            self.add_distance_traveled(dist)
+
             point_xyz = self.xy_to_xyz_geom(point)
             self.go_to_position(point_xyz, self.DRAW_SPEED)
-
 
