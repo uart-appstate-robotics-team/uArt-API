@@ -109,7 +109,6 @@ class uart:
             _, cap = cv2.VideoCapture(1).read()
             self.ptransform = PerspectiveTransform(cap)
 
-
         #print(self.canvas_corners)
         #print(im)
         self.xScale = self.get_scale(
@@ -525,5 +524,4 @@ class uart:
 
             point_xyz = self.xy_to_xyz_geom(point)
             self.go_to_position(point_xyz, self.DRAW_SPEED)
-
 
