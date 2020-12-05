@@ -58,14 +58,10 @@ class uart:
     """
     __init__
         im = the image you're trying to paint/draw
-        pixels = the dictionary of colors you have access to
-        initialized = a list of booleans determining which values you will initialize[
-            0: available_pixel uses pixels parameter otherwise use defaults,
-            1: set swift to SwiftAPI object otherwise set them to None,
-            2: set image to a blank white 200x200 image,
-            3: calibrate canvas_corners using setFourCorners otherwise set to a preset
-            4: set ptransform using the webcam
-            ]
+        available_pixel = the dictionary of colors you have access to
+        set_swift = do you configure the swift object to be the robot arm plugged in via usb?
+        calibrate_manual = do you configure the four corners manually? (not the best method)
+        set_p_transform = do you configure the perspective transform object using the webcam?
     """
 
     def __init__(self, im=None, available_pixel=default_available_pixel, set_swift=True, calibrate_manual=False, set_p_transform=False):
