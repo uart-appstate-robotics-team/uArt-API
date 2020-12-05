@@ -15,6 +15,15 @@ from PIL import Image
 from uarm.wrapper import SwiftAPI
 from uarm.tools.list_ports import get_ports
 
+default_available_pixel = {
+    "red": [255, 0, 0],
+    "green": [0, 255, 0],
+    "blue": [0, 0, 255],
+    "magenta": [255, 0, 255],
+    "tomato": [255, 99, 71],
+    "lawn green": [124, 252, 0],
+    }
+
 class uart:
     # rgb values of all the paints
     available_pixel = {}
@@ -59,29 +68,18 @@ class uart:
             ]
     """
 
-    def __init__(self, im, pixels, initialized):
-        if initialized[0]:
-            self.available_pixel = pixels
-        else:
-            self.available_pixel = {
-                "red": [255, 0, 0],
-                "green": [0, 255, 0],
-                "blue": [0, 0, 255],
-                "magenta": [255, 0, 255],
-                "tomato": [255, 99, 71],
-                "lawn green": [124, 252, 0],
-            }
+    def __init__(self, im=None, available_pixel=default_available_pixel, set_swift=True, calibrate_manual=False, set_p_transform=False):
+        self.available_pixel = available_pixel
 
-        if initialized[1]:
+        if set_swift:
             self.swift = SwiftAPI(filters={"hwid": "USB VID:PID=2341:0042"})
             self.device_info = self.swift.get_device_info()
             self.firmware_version = self.device_info["firmware_version"]
             self.swift.set_mode(0)
 
-        if initialized[2]:
-            self.image = im
+        self.image = im
 
-        if initialized[3] and initialized[1]:
+        if calibrate_manual and set_swift:
             print("moving")
             self.go_home()
             print("Setting four corners; input tl, tr, bl or br")
@@ -105,12 +103,10 @@ class uart:
 
             print("Setting four corners to default coordinates")
 
-        if initialized[4]:
+        if set_p_transform:
             _, cap = cv2.VideoCapture(1).read()
             self.ptransform = PerspectiveTransform(cap)
 
-        #print(self.canvas_corners)
-        #print(im)
         self.xScale = self.get_scale(
             len(im[0]), [self.canvas_corners[0], self.canvas_corners[1]]
         )
