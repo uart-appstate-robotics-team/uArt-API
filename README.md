@@ -29,6 +29,12 @@ to work if you dig through the code enough
 
 # Examples of work created with uArt
 
+![skull](./examples/work/skull.jpg)
 
+![bliss](./examples/work/bliss-painting.jpg)
+
+![horns](./examples/work/horns.jpg)
+
+![tree](./examples/work/tree.jpg)
 
 Take a look at the Instagram account @bart.robot for more work.
