@@ -89,10 +89,10 @@ class uart:
         else:
             # painting corners
             self.canvas_corners = [
-             [230, 80, 168],  # tl
-             [230, -85, 168],  # tr
-             [228, 80, -40],  # bl
-             [228, -85, -40], #br
+             [225, 80, 168],  # tl
+             [225, -85, 168],  # tr
+             [230, 80, -40],  # bl
+             [229, -85, -40], #br
             ]
 
             # stippling/drawing corners
@@ -381,13 +381,16 @@ class uart:
 
     """
     draw_point draws a point on the canvas
+
+    @param point: must have desired point as tuple in the last element
+         EX: ( "COLOR", (x,y) )
     """
     def draw_point(self, point):
-        point = point[0]
-#        print(point)
+        point = point[-1]
+        #print(point)
         point_xyz = self.xy_to_xyz_geom(point)
 
-        point_lifted = [point_xyz[0] - 6, point_xyz[1], point_xyz[2]]
+        point_lifted = [point_xyz[0] - 12, point_xyz[1], point_xyz[2]]
 #        print("going to pre point")
         self.go_to_position(point_lifted, self.LIFT_SPEED)
 #        print("going to point")
@@ -479,7 +482,9 @@ class uart:
             point_counter += 1
             dist = 1
             self.add_distance_traveled(dist)
+
             self.draw_point(point)
+
             if (point_counter % (num_points//10)) == 0:
                 print(int((point_counter/num_points)*100),"% complete...")
 
