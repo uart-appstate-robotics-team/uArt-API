@@ -36,5 +36,3 @@ to work if you dig through the code enough
 ![horns](./examples/work/horns.jpg)
 
 ![tree](./examples/work/tree.jpg)
-
-Take a look at the Instagram account @bart.robot for more work.
